@@ -30,6 +30,7 @@ def create_app():
     app.config['SECRET_KEY'] = 'sadgnfysrtujfgjxbfgdgd'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///messages.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['REDIS_URL'] = 'redis://192.167.2.176:6379'
 
     db.init_app(app)
     migrate.init_app(app, db)
@@ -41,6 +42,7 @@ def create_app():
     app.register_blueprint(index_bp)
 
     app.app_context().push()
+
 
     return app
 

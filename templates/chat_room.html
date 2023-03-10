@@ -96,148 +96,112 @@
         div.innerHTML = isBot ? marked.parse(message) : message;
         conversation.appendChild(div);
         document.querySelectorAll('code').forEach((code) => {
-           hljs.highlightBlock(code);
+            hljs.highlightBlock(code);
         });
-        {#hljs.highlightBlock(div)#}
-        {#if (isBot) {#}
-        {#    div.querySelectorAll('pre code').forEach((block) => {#}
-        {#        var copyBtn = document.createElement('button');#}
-        {#        copyBtn.className = 'btn btn-sm btn-outline-secondary copy-button';#}
-        {#        copyBtn.textContent = 'Copy';#}
-        {#        copyBtn.addEventListener('click', function () {#}
-        {#            navigator.clipboard.writeText(block.textContent)#}
-        {#                .then(() => {#}
-        {#                    console.log('Text copied to clipboard');#}
-        {#                    copyBtn.textContent = 'Copied!';#}
-        {#                    setTimeout(function () {#}
-        {#                        copyBtn.textContent = 'Copy';#}
-        {#                    }, 2000);#}
-        {#                })#}
-        {#                .catch(err => {#}
-        {#                    console.error('Error in copying text: ', err);#}
-        {#                });#}
-        {##}
-        {#        });#}
-        {#        block.parentNode.insertBefore(copyBtn, block.nextSibling);#}
-        {#    });#}
-        {#}#}
+        if (isBot) {
+            div.querySelectorAll('pre code').forEach((block) => {
+                var copyBtn = document.createElement('button');
+                copyBtn.className = 'btn btn-sm btn-outline-secondary copy-button';
+                copyBtn.textContent = 'Copy';
+                copyBtn.addEventListener('click', function () {
+                    navigator.clipboard.writeText(block.textContent)
+                        .then(() => {
+                            console.log('Text copied to clipboard');
+                            copyBtn.textContent = 'Copied!';
+                            setTimeout(function () {
+                                copyBtn.textContent = 'Copy';
+                            }, 2000);
+                        })
+                        .catch(err => {
+                            console.error('Error in copying text: ', err);
+                        });
 
+                });
+                block.parentNode.insertBefore(copyBtn, block.nextSibling);
+            });
         }
+        return div
+    }
 
-        function showLoading() {
-            var conversation = document.getElementById('conversation');
-            var div = document.createElement('div');
-            div.classList.add('loading');
-            conversation.appendChild(div);
+    function showLoading() {
+        var conversation = document.getElementById('conversation');
+        var div = document.createElement('div');
+        div.classList.add('loading');
+        conversation.appendChild(div);
+    }
+
+    function hideLoading() {
+        var conversation = document.getElementById('conversation');
+        var div = conversation.querySelector('.loading');
+        if (div) {
+            conversation.removeChild(div);
         }
+    }
 
-        function hideLoading() {
-            var conversation = document.getElementById('conversation');
-            var div = conversation.querySelector('.loading');
-            if (div) {
-                conversation.removeChild(div);
-            }
+    var divBox;
+    var chat_id = "{{ chat_room.chat_id }}";
+
+    function sendMessage(event) {
+        event.preventDefault();
+        var msg = document.getElementById('message').value;
+        if (msg.trim() === '') {
+            return;
         }
+        addMessage('我：' + msg, 'mine');
+        showLoading();
 
-        function sendMessage(event) {
-            event.preventDefault();
-            var msg = document.getElementById('message').value;
-            var chat_id = "{{ chat_room.chat_id }}";
-            if (msg.trim() === '') {
-                return;
-            }
-            addMessage('我：' + msg, 'mine');
-            showLoading();
-            var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4) {
-                    hideLoading();
-                    if (xhr.status === 200) {
-                        if (xhr.responseText) {
-                            addMessage('Bot：' + xhr.responseText, 'botmsg');
-                        }
-                    } else {
-                        addMessage('Error: ' + xhr.status, 'botmsg');
+        document.getElementById('message').value = '';
+
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4) {
+                hideLoading();
+                if (xhr.status === 200) {
+                    if (xhr.responseText) {
+                        divBox = addMessage('Bot：');
+
                     }
+                } else {
+                    addMessage('Error: ' + xhr.status, 'botmsg');
                 }
-            };
-            xhr.open('POST', '/chat', true);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.send(JSON.stringify({
-                'msg': msg,
-                'chat_id': chat_id
-            }));
-            document.getElementById('message').value = '';
-        }
+            }
+        };
+        xhr.open('POST', '/chat', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.send(JSON.stringify({
+            'msg': msg,
+            'chat_id': chat_id
+        }));
 
-        var form = document.querySelector('form');
-        form.addEventListener('submit', sendMessage);
 
-        window.scrollTo(0, document.body.scrollHeight);
+    }
 
+    var source = new EventSource("/stream?channel=" + chat_id);
+    source.addEventListener('message', function (event) {
+        console.log(event.data);
+    });
+    /**
+     source.onmessage = function (event) {
+        console.log(event);
+        var dataValue = divBox.dataset.msg + event.data;
+        divBox.setAttribute('data-msg', dataValue);
+        divBox.innerHTML = marked.parse(dataValue);
+        document.querySelectorAll('code').forEach((code) => {
+            hljs.highlightBlock(code);
+        });
+    };
+     **/
+    var form = document.querySelector('form');
+    form.addEventListener('submit', sendMessage);
+
+    window.scrollTo(0, document.body.scrollHeight);
+
+    window.onunload = function () {
+        source.close();
+    };
 </script>
 <script>
-    {#function upload(blob) {#}
-    {#    var formData = new FormData();#}
-    {#    formData.append('file', blob, 'audio.mp3');#}
-    {##}
-    {#    var xhr = new XMLHttpRequest();#}
-    {#    xhr.open('POST', '/voice', true);#}
-    {#    xhr.onreadystatechange = function () {#}
-    {#        if (xhr.readyState == 4 && xhr.status == 200) {#}
-    {#            console.log(xhr.responseText);#}
-    {#        }#}
-    {#    };#}
-    {#    xhr.send(formData);#}
-    {#}#}
-        {##}
-        {#const button = document.querySelector('button');#}
-        {#const button = document.getElementById('recordButton');#}
-        {#var stopButton = document.getElementById('stopButton');#}
-        {#const recorder = new MicRecorder({#}
-        {#    bitRate: 128#}
-        {#})
-            ;
-            #}
-            {##}
-            {#button.addEventListener('click', startRecording);#}
-            {##}
-            {#function startRecording() {#}
-            {#    recorder.start().then(() => {#}
-            {#        button.textContent = 'Stop recording';#}
-            {#        button.classList.toggle('btn-danger');#}
-            {#        button.removeEventListener('click', startRecording);#}
-            {#        button.addEventListener('click', stopRecording);#}
-            {#    }).catch((e) => {#}
-            {#        alert(e);#}
-            {#        console.error(e);#}
-            {#    });#}
-            {#}#}
-                {##}
-                {#function stopRecording() {#}
-                {#    recorder.stop().getMp3().then(([buffer, blob]) => {#}
-                {#        console.log(buffer, blob);#}
-                {#        const file = new File(buffer, 'music.mp3', {#}
-                {#            type: blob.type,#}
-                {#            lastModified: Date.now()#}
-                {#        });#}
-                {##}
-                {#        const li = document.createElement('li');#}
-                {#        const player = new Audio(URL.createObjectURL(file));#}
-                {#        player.controls = true;#}
-                {#        li.appendChild(player);#}
-                {#        document.querySelector('#playlist').appendChild(li);#}
-                {##}
-                {#        button.textContent = 'Start recording';#}
-                {#        button.classList.toggle('btn-danger');#}
-                {#        button.removeEventListener('click', stopRecording);#}
-                {#        button.addEventListener('click', startRecording);#}
-                {#        upload(blob);#}
-                {#    }).catch((e) => {#}
-                {#        console.error(e);#}
-                {#    });#}
-                {
-    #}#}
+
 </script>
 </body>
 </html>

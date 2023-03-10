@@ -1,11 +1,14 @@
 import json
 import os
 import platform
+from concurrent.futures import ThreadPoolExecutor
 
 import nltk
 import openai
-from flask import current_app as app
+from flask import current_app as app, Response
 from flask import request, session, Blueprint
+from flask_executor import Executor
+from flask_sse import sse
 from openai import InvalidRequestError
 
 import common
@@ -45,6 +48,21 @@ def chat():
     return result
 
 
+@chatbot_bp.route('/stream')
+def stream():
+    if "user_id" not in session:
+        return "用户未登录"
+
+    # user_id = session['user_id']
+
+    def event_stream():
+        # 消息生成函数
+        yield 'data: {"message": "Hello world"}\n\n'
+
+    # 设置响应头
+    return Response(event_stream(), mimetype='text/event-stream')
+
+
 def handle_command(cmd, msg, user_id, chat_id):
     commands = {
         "设置风格": setting_handler,
@@ -79,7 +97,8 @@ def chat_handler(cmd, msg, user_id, chat_id):
             system_prompt = chat_room.setting
         messages = loadMessage(user_id, chat_id, 80, system_prompt)
 
-        result = generate_text(messages)
+        # result = generate_text(messages)
+        result = generate_text_stream(messages)
         db.session.commit()
         return result
     except Exception as e:
@@ -226,6 +245,70 @@ def generate_text(messages):
     message = Message(role="assistant", content=assistant['content'], user_id=user_id, chat_id=chat_id)
     db.session.add(message)
     return assistant['content'].strip()
+
+
+
+executor = ThreadPoolExecutor(max_workers=4)
+def generate_text_stream(messages):
+    messages_data = [{'role': message.role, 'content': message.content} for message in messages]
+
+    app.logger.info(json.dumps(messages_data, ensure_ascii=False))
+
+    user_id = messages[0].user_id
+    chat_id = messages[0].chat_id
+
+    with app.app_context():
+        future = executor.submit(long_running_task, app.app_context(), messages_data, user_id, chat_id)
+        future
+    return ''
+    # assistant = responses.choices[0]['message']
+    # message = Message(role="assistant", content=assistant['content'], user_id=user_id, chat_id=chat_id)
+    # db.session.add(message)
+    # return assistant['content'].strip()
+
+
+def long_running_task(app_context, messages_data, user_id, chat_id):
+    with app_context:
+        try:
+            responses = openai.ChatCompletion.create(
+                model=openai_chat_model,
+                messages=messages_data,
+                user=f"{chat_id}",
+                temperature=0.5,
+                stream=True
+            )
+            response_str = ''
+            for response_json in responses:
+                choice = response_json['choices'][0]
+                if choice['finish_reason'] == 'stop':
+                    break
+                # error handling
+                if choice['finish_reason'] == 'length':
+                    # sse.publish(chat_id, data='内容过长', event='user_' + user_id)
+                    sse.publish({"message": "内容过长"}, type='message', channel=chat_id)
+                    break
+
+                if 'gpt-3.5-turbo' in openai_chat_model:
+                    delta = choice['delta']
+                    if "role" in delta or delta == {}:
+                        char = ''
+                    else:
+                        char = delta['content']
+                else:
+                    char = choice['text']
+
+                # sse.publish({"message": char}, type='message', channel=chat_id)
+                sse.publish({"message": char}, type='message', channel=chat_id)
+                # sse.publish(chat_id, data=char, event='user_' + user_id)
+                response_str += char
+            message = Message(role="assistant", content=response_str, user_id=user_id, chat_id=chat_id)
+            db.session.add(message)
+        except InvalidRequestError as e:
+            app.logger.error(e)
+            pass
+        except Exception as e:
+            app.logger.error(e)
+        pass
 
 
 def generate_image(msg):
