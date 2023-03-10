@@ -47,20 +47,21 @@ def chat():
     result = handle_command(cmd, msg, user_id, chat_id)
     return result
 
-
-@chatbot_bp.route('/stream')
-def stream():
-    if "user_id" not in session:
-        return "用户未登录"
-
-    # user_id = session['user_id']
-
-    def event_stream():
-        # 消息生成函数
-        yield 'data: {"message": "Hello world"}\n\n'
-
-    # 设置响应头
-    return Response(event_stream(), mimetype='text/event-stream')
+# @chatbot_bp.route('/subscribe')
+# def stream():
+#     if "user_id" not in session:
+#         return "用户未登录"
+#     user_id = session['user_id']
+#
+#     chat_id = f"chat_user_{user_id}"
+#     if 'chat_id' in request.json:
+#         chat_id = request.json['chat_id']
+#     # def event_stream():
+#     #     # 消息生成函数
+#     #     yield 'data: {"message": "Hello world"}\n\n'
+#     # # 设置响应头
+#     # return Response(event_stream(), mimetype='text/event-stream')
+#     return sse.stream('hello', channel=chat_id)
 
 
 def handle_command(cmd, msg, user_id, chat_id):

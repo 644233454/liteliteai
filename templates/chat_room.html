@@ -176,11 +176,14 @@
 
     }
 
+    /**
     var source = new EventSource("/stream?channel=" + chat_id);
     source.addEventListener('message', function (event) {
         console.log(event.data);
     });
-    /**
+     **/
+    var source = new EventSource("/stream");
+
      source.onmessage = function (event) {
         console.log(event);
         var dataValue = divBox.dataset.msg + event.data;
@@ -190,7 +193,7 @@
             hljs.highlightBlock(code);
         });
     };
-     **/
+
     var form = document.querySelector('form');
     form.addEventListener('submit', sendMessage);
 
