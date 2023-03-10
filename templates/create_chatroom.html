@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+        <title>LiteLiteAI</title>
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container">
+    <h1>新增聊天室</h1>
+    <form method="POST" action="{{ url_for('index.add_chatroom') }}">
+        <div class="form-group">
+            <label for="chat_title">聊天室标题</label>
+            <input type="text" class="form-control" id="chat_title" name="chat_title" required>
+        </div>
+        <div class="form-group">
+            <label for="setting">机器人风格</label>
+            <small id="settingHelp"
+                   class="form-text text-muted">请输入机器人的风格，例如“温柔体贴”、“幽默风趣”、“严肃专业”等。</small>
+            <textarea class="form-control" id="setting" name="setting" rows="3"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">保存</button>
+    </form>
+</div>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.6.0/js/bootstrap.min.js"></script

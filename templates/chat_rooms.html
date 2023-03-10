@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>LiteLiteAI</title>
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css">
+    <style>
+        .chat-room {
+            margin: 10px 0;
+        }
+
+        .chat-room button {
+            width: 100%;
+        }
+
+        .add-btn {
+            margin-top: 10px;
+            width: 50%;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card mt-5">
+                <div class="card-header text-center">
+                    <h4>Choose a chat room</h4>
+                </div>
+                <div class="card-body">
+                    {% if chat_rooms %}
+                        {% for chat_room in chat_rooms %}
+                            <div class="chat-room">
+                                <button type="button" class="btn btn-link"
+                                        onclick="location.href='{{ url_for('index.chatroom', chat_id=chat_room.chat_id) }}'">{{ chat_room.chat_title }}</button>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>No chat rooms available.</p>
+                    {% endif %}
+                </div>
+            </div>
+            <a href="{{ url_for('index.create_chatroom') }}" class="btn btn-primary d-block mx-auto mt-3">新增聊天室</a>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.6.0/js/bootstrap.min.js"></script>
+</body>
+</html>

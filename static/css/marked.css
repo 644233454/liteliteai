@@ -1,0 +1,167 @@
+/* Markdown output styles */
+
+/* Paragraphs */
+p {
+    margin-bottom: 1rem;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-weight: bold;
+}
+
+h1 {
+    font-size: 2.5rem;
+}
+
+h2 {
+    font-size: 2rem;
+}
+
+h3 {
+    font-size: 1.75rem;
+}
+
+h4 {
+    font-size: 1.5rem;
+}
+
+h5 {
+    font-size: 1.25rem;
+}
+
+h6 {
+    font-size: 1rem;
+}
+
+/* Blockquotes */
+blockquote {
+    margin: 0 0 1rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    border-left: 0.25rem solid #ccc;
+}
+
+blockquote p:last-child {
+    margin-bottom: 0;
+}
+
+/* Code blocks */
+pre {
+    margin: 0 0 1rem;
+    padding: 1rem;
+    font-size: 0.9rem;
+    background-color: #f8f9fa;
+    border: 1px solid #ccc;
+    border-radius: 0.25rem;
+}
+
+pre code {
+    font-size: inherit;
+    background-color: transparent;
+    border: none;
+}
+
+/* Code spans */
+code {
+    font-size: 0.9rem;
+    background-color: #f8f9fa;
+    padding: 0.1em 0.25em;
+    border-radius: 0.25rem;
+    white-space: nowrap;
+}
+
+/* Lists */
+ul, ol {
+    margin-bottom: 1rem;
+}
+
+li {
+    margin: 0.25rem 0;
+    padding-left: 1rem;
+}
+
+/* Links */
+a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Images */
+img {
+    max-width: 100%;
+}
+
+/* Custom styles */
+
+.message {
+    margin: 0.5rem 0;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.mine {
+    background-color: #000000;
+    color: #fff;
+}
+
+.other {
+    background-color: #f8f9fa;
+}
+
+.loading {
+    text-align: center;
+}
+
+.loading:before {
+    content: "";
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    margin-right: 0.5em;
+    border-radius: 50%;
+    border: 0.25em solid #007bff;
+    border-top-color: transparent;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+pre {
+    white-space: pre-wrap; /* 自动换行 */
+    word-break: break-all; /* 长单词强制换行 */
+}
+
+.copy-btn {
+    margin-left: 5px;
+}
+
+.copy-btn:focus {
+    outline: none;
+}
+
+/* 复制按钮悬浮效果 */
+.copy-btn:hover {
+    color: #007bff;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+code {
+    white-space: pre-wrap;
+}
+
+body {
+    font-size: 16px;
+    line-height: 1.5;
+}

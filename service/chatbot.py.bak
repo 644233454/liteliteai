@@ -1,0 +1,305 @@
+import json
+import os
+import platform
+import openai
+import requests as requests
+from flask import request, render_template, session, Blueprint
+from flask import current_app as app
+from openai import InvalidRequestError
+
+from app import db
+from manage import User, Message
+
+proxy_host = "127.0.0.1"
+proxy_port = "7890"
+
+proxies = {'http': f'socks5://{proxy_host}:{proxy_port}',
+           'https': f'socks5://{proxy_host}:{proxy_port}'}
+
+password = "gpttest"
+
+openai.organization = "org-hlaTEbggCCVQCzEteX8SI3NE"
+openai.api_key = os.getenv("OPENAI_API_KEY")
+openai_chat_model = "gpt-3.5-turbo-0301"
+
+if platform.system() != 'Linux':
+    openai.proxy = proxies
+# openai.Model.list()
+
+chatbot_bp = Blueprint('chatbot', __name__)
+
+
+@chatbot_bp.route('/')
+def index():
+    if 'user_id' in session:
+        user = User.query.filter_by(id=session['user_id']).first()
+        return render_template("index.html", user=user)
+    else:
+        return render_template("login.html")
+
+
+@chatbot_bp.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(username=username, password=password).first()
+        # 开放注册
+        if user is None:
+            user = User(username=username, password=password)
+            db.session.add(user)
+            db.session.commit()
+            user = User.query.filter_by(username=username, password=password).first()
+
+        if user is None:
+            return render_template('login.html', error='Invalid username or password.')
+        else:
+            session['user_id'] = user.id
+            return render_template("index.html", user=user)
+    else:
+        if 'user_id' in session:
+            user = User.query.filter_by(id=session['user_id']).first()
+            return render_template("index.html", user=user)
+        else:
+            return render_template("login.html")
+
+
+@chatbot_bp.route('/logout')
+def logout():
+    session.pop('user_id', None)
+    return render_template('login.html')
+
+def handle_command(cmd):
+    commands = {
+        "start": start_handler,
+        "stop": stop_handler,
+        "status": status_handler
+    }
+
+    handler = commands.get(cmd, default_handler)
+    handler()
+
+def start_handler():
+    print("Starting...")
+
+def stop_handler():
+    print("Stopping...")
+
+def status_handler():
+    print("Status...")
+
+def default_handler():
+    print("Unknown command")
+
+handle_command("start")  # Output: Starting...
+handle_command("pause")  # Output: Unknown command
+
+@chatbot_bp.route('/chat', methods=['POST'])
+def chat():
+    result = "网络异常"
+    try:
+        msg = request.json['msg']
+
+        if 'token' in request.json and request.json['token'] == "asdfhgdsfnsdb":
+            session['user_id'] = 0
+
+        user_id = session['user_id']
+        if user_id is None:
+            return "用户未登录"
+
+        chat_id = f"chat_user_{user_id}"
+        image_chat_id = f"image_chat_user_{user_id}"
+        if 'chat_id' in request.json:
+            chat_id = request.json['chat_id']
+
+        if msg.lower().startswith("设置"):
+            print("The text starts with '设置'.")
+        else:
+            print("The text does not start with '设置'.")
+
+        # 用户发送的消息
+        send_msg = Message(role="user", content=msg, user_id=user_id, chat_id=chat_id)
+        if not ("照片" in msg or "图像" in msg or "图片" in msg or "图" in msg):
+            db.session.add(send_msg)
+            result = generate_text(loadMessage(user_id, chat_id, 80))
+        else:
+            # 翻译文本
+            trans_msg = Message(role="user", content=f"Translate the text into English：{msg}",
+                                user_id=user_id, chat_id=image_chat_id)
+            messages = [
+                trans_msg
+            ]
+            db.session.add(trans_msg)
+            trans_result = generate_text(messages)
+
+            # 判断是否图片生成的消息
+            check_msg = Message(role="user",
+                                content=f"Determine whether the following sentence is requesting"
+                                        f" you to send images: {trans_result}",
+                                user_id=user_id, chat_id=image_chat_id)
+            messages = [
+                Message(role="system",
+                        content="You are an assistant who can only reply with \"Yes\" or \"No\" in English,"
+                                " without using any other words or punctuation.",
+                        user_id=user_id, chat_id=image_chat_id),
+                check_msg
+            ]
+            db.session.add(check_msg)
+            check_result = generate_text(messages)
+
+            if "Yes" not in check_result:
+                db.session.add(send_msg)
+                result = generate_text(loadMessage(user_id, chat_id, 80))
+            else:
+                # 用于生成提示词的消息
+                prompt_msg = Message(role="user", content=f"{trans_result}",
+                                     user_id=user_id, chat_id=image_chat_id)
+                db.session.add(prompt_msg)
+                messages = [
+                    Message(role="system",
+                            content="You are a prompt generation assistant that extends received text to 50 words, "
+                                    "extracts adjectives and nouns, and expands them into multiple prompts separated "
+                                    "by spaces before sending them to me. Your replies only contain processed "
+                                    "prompts without any additional explanations.",
+                            user_id=user_id, chat_id=image_chat_id),
+                    prompt_msg
+                ]
+                result = generate_text(messages)
+                # 用于生成图片的消息
+                img_msg = Message(role="user", content=result, user_id=user_id, chat_id=image_chat_id)
+                db.session.add(img_msg)
+                result = generate_image(img_msg)
+        db.session.commit()
+        return result
+    except:
+        db.session.rollback()
+        raise
+    finally:
+        db.session.close()
+
+
+#
+@chatbot_bp.route('/image', methods=['POST'])
+def image():
+    msg = request.json['msg']
+
+    if 'token' in request.json and request.json['token'] == "asdfhgdsfnsdb":
+        session['user_id'] = 0
+    user_id = session['user_id']
+    if user_id is None:
+        return "用户未登录"
+
+    try:
+        with db.session.no_autoflush:
+            image_chat_id = f"image_chat_user_{user_id}"
+            img_msg = Message(role="user", content=msg, user_id=user_id, chat_id=image_chat_id)
+            db.session.add(img_msg)
+            result = generate_image(img_msg)
+        db.session.commit()
+        return result
+    except:
+        db.session.rollback()
+        raise
+    finally:
+        db.session.close()
+
+
+@chatbot_bp.route('/voice', methods=['POST'])
+def voice():
+    file_path = request.json['file_path']
+
+    if 'token' in request.json and request.json['token'] == "asdfhgdsfnsdb":
+        session['user_id'] = 0
+    user_id = session['user_id']
+    if user_id is None:
+        return "用户未登录"
+
+    return read_voice(file_path)
+
+
+def loadMessage(user_id, chat_id, limit):
+    messages = Message.query.filter_by(user_id=user_id, chat_id=chat_id).order_by(Message.created_at.desc()).limit(
+        limit).all()
+    message_lengths = sum(len(m.content) for m in messages)
+    app.logger.info(f"消息长度 {message_lengths}  limit:{limit}")
+    if message_lengths > 4096:
+        return loadMessage(user_id, chat_id, limit - 2)
+    messages = messages[::-1]
+    return messages
+
+
+def generate_text(messages):
+    messages_data = [{'role': message.role, 'content': message.content} for message in messages]
+
+    app.logger.info(json.dumps(messages_data, ensure_ascii=False))
+
+    user_id = messages[0].user_id
+    chat_id = messages[0].chat_id
+    try:
+        responses = openai.ChatCompletion.create(
+            model=openai_chat_model,
+            messages=messages_data,
+            user=f"user_{user_id}"
+        )
+    except InvalidRequestError as e:
+        app.logger.error(e)
+        if e.http_status != 200:
+            if e.code == "context_length_exceeded":
+                return generate_text(loadMessage(user_id, chat_id, len(messages) - 1))
+            responses = openai.ChatCompletion.create(
+                model=openai_chat_model,
+                messages=messages_data,
+                user=f"user_{user_id}"
+            )
+        pass
+    except Exception as e:
+        app.logger.error(e)
+        return "网络异常，请重试"
+
+    assistant = responses.choices[0]['message']
+    message = Message(role="assistant", content=assistant['content'], user_id=user_id, chat_id=chat_id)
+    db.session.add(message)
+    return assistant['content'].strip()
+
+
+def generate_image(msg):
+    try:
+        responses = openai.Image.create(
+            prompt=msg.content,
+            n=1,
+            size="512x512"
+        )
+    except InvalidRequestError as e:
+        app.logger.error(e)
+        if 'safety system' in e.user_message:
+            return "敏感词警告！！！"
+        return "网络异常，请重试"
+    except Exception as e:
+        app.logger.error(e)
+        return "网络异常，请重试"
+
+    result = responses.data[0].url
+    db.session.add(Message(role="assistant", content=result, user_id=msg.user_id, chat_id=msg.chat_id))
+    return f"![]({result})"
+
+
+def read_voice(file_path):
+    app.logger.info(file_path)
+    try:
+        result = openai.Audio.transcribe(
+            file=open(file_path, 'r', errors='ignore'),
+            model='whisper-1',  # 使用的模型，可选参数
+        )
+    except Exception as e:
+        app.logger.error(e)
+        return "网络异常，请重试"
+
+    return result.data[0].text
+
+
+def post_api(url, headers, data):
+    if platform.system() == 'Linux':
+        response = requests.post(url, headers=headers, data=json.dumps(data))
+    else:
+        response = requests.post(url, headers=headers, data=json.dumps(data), proxies=proxies)
+    return response

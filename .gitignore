@@ -1,0 +1,5 @@
+restart.sh
+stop.sh
+.idea
+__pycache__
+logs
