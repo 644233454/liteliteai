@@ -3,3 +3,4 @@ stop.sh
 .idea
 __pycache__
 logs
+instance/*.db
