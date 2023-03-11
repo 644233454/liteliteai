@@ -67,7 +67,6 @@ async def image(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "msg": update.message.text,
         "token": "telegram_bjkfhebxogdb",
         "chat_id": f"image_{update.effective_chat.id}",
-        "user_id": update.message.from_user.id
     }
 
     response = requests.post("http://127.0.0.1:12380/image", headers=headers, data=json.dumps(data))
