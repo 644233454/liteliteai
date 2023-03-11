@@ -4,3 +4,4 @@ stop.sh
 __pycache__
 logs
 instance/*.db
+instance/messages.db-journal
