@@ -2,6 +2,7 @@ import json
 import os
 import platform
 from concurrent.futures import ThreadPoolExecutor
+from multiprocessing.pool import ThreadPool
 
 import nltk
 import openai
@@ -24,7 +25,9 @@ if platform.system() != 'Linux':
     nltk.set_proxy(f'socks5://{common.proxy_host}:{common.proxy_port}')
 
 chatbot_bp = Blueprint('chatbot', __name__)
-executor = ThreadPoolExecutor(max_workers=4)
+
+
+# executor = ThreadPoolExecutor(max_workers=4)
 
 
 @chatbot_bp.route('/chat', methods=['POST'])
@@ -248,8 +251,9 @@ def generate_text_stream(messages):
 
     user_id = messages[0].user_id
     chat_id = messages[0].chat_id
-
-    executor.submit(long_running_task, app.app_context(), messages_data, user_id, chat_id)
+    # executor.submit(long_running_task, app.app_context(), messages_data, user_id, chat_id)
+    pool = ThreadPool(processes=1)
+    pool.apply_async(long_running_task, args=(app.app_context(), messages_data, user_id, chat_id))
     return ''
 
 
