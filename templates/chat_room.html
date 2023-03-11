@@ -185,8 +185,8 @@
         console.log(event.data);
     });
      **/
-    /**
-     {#var source = new EventSource("{{ url_for('sse.stream', channel=chat_room.chat_id) }}");#}
+    {#/**#}
+     var source = new EventSource("{{ url_for('sse.stream', channel=chat_room.chat_id) }}");
      source.addEventListener('chat', function (event) {
         var data = JSON.parse(event.data);
         {#console.log(data.message);#}
@@ -199,7 +199,7 @@
      source.addEventListener('error', function (event) {
         alert("网络异常，请刷新页面");
     }, false);
-     **/
+     {#**/#}
     var form = document.querySelector('form');
     form.addEventListener('submit', sendMessage);
 
