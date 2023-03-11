@@ -2,13 +2,11 @@ import json
 import os
 import platform
 from concurrent.futures import ThreadPoolExecutor
-from multiprocessing.pool import ThreadPool
 
 import nltk
 import openai
-from flask import current_app as app, Response
+from flask import current_app as app
 from flask import request, session, Blueprint
-from flask_executor import Executor
 from flask_sse import sse
 from openai import InvalidRequestError
 
@@ -288,6 +286,7 @@ def long_running_task(app_context, messages_data, user_id, chat_id):
                     char = choice['text']
 
                 sse.publish({"message": char}, type='chat', channel=chat_id)
+                app.logger.info(char)
 
                 response_str += char
             message = Message(role="assistant", content=response_str, user_id=user_id, chat_id=chat_id)
