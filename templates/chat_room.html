@@ -139,6 +139,7 @@
     }
 
     var divBox;
+    var chat_content;
     var chat_id = "{{ chat_room.chat_id }}";
 
     function sendMessage(event) {
@@ -158,8 +159,10 @@
                 hideLoading();
                 if (xhr.status === 200) {
                     if (xhr.responseText) {
-                        divBox = addMessage('Bot：');
-
+                        divBox = addMessage('Bot：' + (xhr.responseText));
+                    } else {
+                        chat_content = 'Bot：';
+                        divBox = addMessage(chat_content);
                     }
                 } else {
                     addMessage('Error: ' + xhr.status, 'botmsg');
@@ -177,22 +180,24 @@
     }
 
     /**
-    var source = new EventSource("/stream?channel=" + chat_id);
-    source.addEventListener('message', function (event) {
+     var source = new EventSource("/stream?channel=" + chat_id);
+     source.addEventListener('message', function (event) {
         console.log(event.data);
     });
      **/
-    var source = new EventSource("/stream");
-
-     source.onmessage = function (event) {
-        console.log(event);
-        var dataValue = divBox.dataset.msg + event.data;
-        divBox.setAttribute('data-msg', dataValue);
-        divBox.innerHTML = marked.parse(dataValue);
+    var source = new EventSource("{{ url_for('sse.stream', channel=chat_room.chat_id) }}");
+    source.addEventListener('chat', function (event) {
+        var data = JSON.parse(event.data);
+        {#console.log(data.message);#}
+        chat_content += data.message;
+        divBox.innerHTML = marked.parse(chat_content);
         document.querySelectorAll('code').forEach((code) => {
             hljs.highlightBlock(code);
         });
-    };
+    }, false);
+    source.addEventListener('error', function (event) {
+        alert("网络异常，请刷新页面");
+    }, false);
 
     var form = document.querySelector('form');
     form.addEventListener('submit', sendMessage);

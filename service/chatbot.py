@@ -24,14 +24,18 @@ if platform.system() != 'Linux':
     nltk.set_proxy(f'socks5://{common.proxy_host}:{common.proxy_port}')
 
 chatbot_bp = Blueprint('chatbot', __name__)
+executor = ThreadPoolExecutor(max_workers=4)
 
 
 @chatbot_bp.route('/chat', methods=['POST'])
 def chat():
     msg = request.json['msg']
 
-    if 'token' in request.json and request.json['token'] == "asdfhgdsfnsdb":
-        session['user_id'] = 0
+    if 'token' in request.json:
+        if request.json['token'] == "telegram_bjkfhebxogdb":
+            session['user_id'] = 0
+        if request.json['token'] == "asdfhgdsfnsdb":
+            session['user_id'] = -1
 
     if "user_id" not in session:
         return "用户未登录"
@@ -46,22 +50,6 @@ def chat():
     msg = parts[1] if len(parts) > 1 else ""
     result = handle_command(cmd, msg, user_id, chat_id)
     return result
-
-# @chatbot_bp.route('/subscribe')
-# def stream():
-#     if "user_id" not in session:
-#         return "用户未登录"
-#     user_id = session['user_id']
-#
-#     chat_id = f"chat_user_{user_id}"
-#     if 'chat_id' in request.json:
-#         chat_id = request.json['chat_id']
-#     # def event_stream():
-#     #     # 消息生成函数
-#     #     yield 'data: {"message": "Hello world"}\n\n'
-#     # # 设置响应头
-#     # return Response(event_stream(), mimetype='text/event-stream')
-#     return sse.stream('hello', channel=chat_id)
 
 
 def handle_command(cmd, msg, user_id, chat_id):
@@ -98,8 +86,10 @@ def chat_handler(cmd, msg, user_id, chat_id):
             system_prompt = chat_room.setting
         messages = loadMessage(user_id, chat_id, 80, system_prompt)
 
-        # result = generate_text(messages)
-        result = generate_text_stream(messages)
+        if user_id == 0:
+            result = generate_text(messages)
+        else:
+            result = generate_text_stream(messages)
         db.session.commit()
         return result
     except Exception as e:
@@ -156,8 +146,11 @@ def image_handler(cmd, msg, user_id, chat_id):
 def image():
     msg = request.json['msg']
 
-    if 'token' in request.json and request.json['token'] == "asdfhgdsfnsdb":
-        session['user_id'] = 0
+    if 'token' in request.json:
+        if request.json['token'] == "telegram_bjkfhebxogdb":
+            session['user_id'] = 0
+        if request.json['token'] == "asdfhgdsfnsdb":
+            session['user_id'] = -1
     if "user_id" not in session:
         return "用户未登录"
     user_id = session['user_id']
@@ -248,8 +241,6 @@ def generate_text(messages):
     return assistant['content'].strip()
 
 
-
-executor = ThreadPoolExecutor(max_workers=4)
 def generate_text_stream(messages):
     messages_data = [{'role': message.role, 'content': message.content} for message in messages]
 
@@ -258,14 +249,8 @@ def generate_text_stream(messages):
     user_id = messages[0].user_id
     chat_id = messages[0].chat_id
 
-    with app.app_context():
-        future = executor.submit(long_running_task, app.app_context(), messages_data, user_id, chat_id)
-        future
+    executor.submit(long_running_task, app.app_context(), messages_data, user_id, chat_id)
     return ''
-    # assistant = responses.choices[0]['message']
-    # message = Message(role="assistant", content=assistant['content'], user_id=user_id, chat_id=chat_id)
-    # db.session.add(message)
-    # return assistant['content'].strip()
 
 
 def long_running_task(app_context, messages_data, user_id, chat_id):
@@ -298,12 +283,12 @@ def long_running_task(app_context, messages_data, user_id, chat_id):
                 else:
                     char = choice['text']
 
-                # sse.publish({"message": char}, type='message', channel=chat_id)
-                sse.publish({"message": char}, type='message', channel=chat_id)
-                # sse.publish(chat_id, data=char, event='user_' + user_id)
+                sse.publish({"message": char}, type='chat', channel=chat_id)
+
                 response_str += char
             message = Message(role="assistant", content=response_str, user_id=user_id, chat_id=chat_id)
             db.session.add(message)
+            db.session.commit()
         except InvalidRequestError as e:
             app.logger.error(e)
             pass

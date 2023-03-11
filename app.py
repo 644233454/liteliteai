@@ -2,7 +2,7 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler
 
-from flask import Flask, session, request
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_sse import sse
@@ -30,7 +30,7 @@ def create_app():
     app.config['SECRET_KEY'] = 'sadgnfysrtujfgjxbfgdgd'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///messages.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['REDIS_URL'] = 'redis://192.167.2.176:6379'
+    app.config['REDIS_URL'] = os.getenv('REDIS_URL')
 
     db.init_app(app)
     migrate.init_app(app, db)
@@ -50,21 +50,6 @@ def create_app():
 
 app = create_app()
 
-# @app.route('/subscribe')
-# def stream():
-#     if "user_id" not in session:
-#         return "用户未登录"
-#     user_id = session['user_id']
-#
-#     chat_id = f"chat_user_{user_id}"
-#     if 'chat_id' in request.json:
-#         chat_id = request.json['chat_id']
-#     # def event_stream():
-#     #     # 消息生成函数
-#     #     yield 'data: {"message": "Hello world"}\n\n'
-#     # # 设置响应头
-#     # return Response(event_stream(), mimetype='text/event-stream')
-#     return sse.stream('hello', channel=chat_id)
 
 
 if __name__ == '__main__':
