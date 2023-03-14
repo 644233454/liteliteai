@@ -179,27 +179,54 @@
 
     }
 
-    /**
-     var source = new EventSource("/stream?channel=" + chat_id);
-     source.addEventListener('message', function (event) {
-        console.log(event.data);
-    });
-     **/
-    {#/**#}
-     var source = new EventSource("{{ url_for('sse.stream', channel=chat_room.chat_id) }}");
-     source.addEventListener('chat', function (event) {
-        var data = JSON.parse(event.data);
-        {#console.log(data.message);#}
-        chat_content += data.message;
-        divBox.innerHTML = marked.parse(chat_content);
-        document.querySelectorAll('code').forEach((code) => {
-            hljs.highlightBlock(code);
-        });
-    }, false);
-     source.addEventListener('error', function (event) {
-        alert("网络异常，请刷新页面");
-    }, false);
-     {#**/#}
+
+    const CHAT_URL = "{{ url_for('sse.stream', channel=chat_room.chat_id) }}";
+    const RECONNECT_DELAY = 10000;
+
+    var source = null;
+
+    function connectEventSource() {
+        source = new EventSource(CHAT_URL);
+        source.addEventListener('chat', onChatEvent, false);
+        source.addEventListener('error', onEventSourceError, false);
+    }
+
+    function disconnectEventSource() {
+        if (source) {
+            source.close();
+            source = null;
+        }
+    }
+
+    function onChatEvent(event) {
+        try {
+            var data = JSON.parse(event.data);
+            chat_content += data.message;
+            divBox.innerHTML = marked.parse(chat_content);
+            document.querySelectorAll('code').forEach((code) => {
+                hljs.highlightBlock(code);
+            });
+        } catch (err) {
+            console.error('Error parsing chat event data:', err);
+        }
+    }
+
+    function onEventSourceError(event) {
+        if (event.target.readyState === EventSource.CLOSED) {
+            console.warn('Event source closed, reconnecting in', RECONNECT_DELAY, 'ms');
+            setTimeout(reconnectEventSource, RECONNECT_DELAY);
+        } else {
+            console.error('Event source error:', event);
+        }
+    }
+
+    function reconnectEventSource() {
+        disconnectEventSource();
+        connectEventSource();
+    }
+
+    connectEventSource();
+
     var form = document.querySelector('form');
     form.addEventListener('submit', sendMessage);
 

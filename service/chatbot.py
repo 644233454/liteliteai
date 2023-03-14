@@ -274,7 +274,7 @@ def long_running_task(app_context, messages_data, user_id, chat_id):
                 # error handling
                 if choice['finish_reason'] == 'length':
                     # sse.publish(chat_id, data='内容过长', event='user_' + user_id)
-                    sse.publish({"message": "内容过长"}, type='chat', channel=chat_id)
+                    # sse.publish({"message": "内容过长"}, type='chat', channel=chat_id)
                     break
 
                 if 'gpt-3.5-turbo' in openai_chat_model:

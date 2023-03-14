@@ -9,6 +9,8 @@ from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 
+from common import proxy_port, proxy_host
+
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -53,7 +55,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "user_id": update.message.from_user.id
     }
 
-    response = requests.post("http://127.0.0.1:12380/chat", headers=headers, data=json.dumps(data))
+    response = requests.post("http://127.0.0.1:5000/chat", headers=headers, data=json.dumps(data))
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response.text,
                                    reply_to_message_id=update.message.message_id)
@@ -69,7 +71,7 @@ async def image(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "chat_id": f"image_{update.effective_chat.id}",
     }
 
-    response = requests.post("http://127.0.0.1:12380/image", headers=headers, data=json.dumps(data))
+    response = requests.post("http://127.0.0.1:5000/image", headers=headers, data=json.dumps(data))
 
     result = response.text
     logging.info(result)
@@ -96,7 +98,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "user_id": update.message.from_user.id
     }
 
-    response = requests.post("http://127.0.0.1:12380/chat", headers=headers, data=json.dumps(data))
+    response = requests.post("http://127.0.0.1:5000/chat", headers=headers, data=json.dumps(data))
 
     result = response.text
     logging.info(result)
@@ -173,7 +175,7 @@ if __name__ == '__main__':
     # # text_with_newlines = re.sub("\\", "", result)
     # print(result)
 
-    application = ApplicationBuilder().token(token).build()
+    application = ApplicationBuilder().token(token).proxy_url(f'http://{proxy_host}:{proxy_port}').build()
 
     start_handler = CommandHandler('start', start)
     image_handler = CommandHandler('image', image)
