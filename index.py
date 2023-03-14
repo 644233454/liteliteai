@@ -31,7 +31,7 @@ def chatroom():
         else:
             chat_room = ChatRoom.query.filter_by(user_id=user_id, chat_id=chat_id).limit(1).first()
             if chat_room is None:
-                flash('聊天室不存在')
+                flash('AI应用不存在')
                 return redirect(url_for('index.chat_rooms'))
 
         messages = Message.query.filter_by(user_id=user_id, chat_id=chat_id).order_by(Message.created_at.desc()).limit(
@@ -109,7 +109,7 @@ def add_chatroom():
     chatroom = ChatRoom(chat_title=chat_title, chat_id=chat_id, setting=setting, user_id=user_id)
     db.session.add(chatroom)
     db.session.commit()
-    flash('聊天室已创建')
+    flash('AI应用已创建')
     return redirect(url_for('index.chat_rooms'))
 
 
@@ -136,7 +136,7 @@ def register():
 
         chat_id = f"chat_user_{user.id}"
 
-        chat_setting = ChatRoom(user_id=user.id, chat_id=chat_id, chat_title="默认聊天室")
+        chat_setting = ChatRoom(user_id=user.id, chat_id=chat_id, chat_title="默认AI应用")
         db.session.add(chat_setting)
 
         db.session.commit()

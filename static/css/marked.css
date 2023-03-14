@@ -107,8 +107,17 @@ img {
 }
 
 .mine {
-    background-color: #000000;
-    color: #fff;
+    background-color: #000000 !important;
+    color: #fff !important;
+}
+
+.botmsg {
+    background-color: #efe5e5;
+    color: black;
+}
+
+pre {
+    padding: 0 !important;
 }
 
 .other {

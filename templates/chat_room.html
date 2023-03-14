@@ -2,75 +2,74 @@
 <html>
 <head>
     <meta charset="utf-8" name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>LiteLiteAI</title>
+    <title>小小AI应用</title>
     <link rel="stylesheet" href="../static/css/marked.css">
-
     <link rel="shortcut icon" href="../static/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.2/css/bulma.min.css">
 </head>
 <body>
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-12">
-            <div class="card">
-                <div class="card-header">
-                    <div class="row">
-                        <div class="col">
-                            <h5 class="mb-0">{{ chat_room.chat_title }}</h5>
+<section class="section">
+    <div class="container">
+        <div class="columns is-centered">
+            <div class="column is-8-desktop is-12-tablet">
+                <div class="card">
+                    <header class="card-header">
+                        <div class="columns is-vcentered" style="width: 100%;">
+                            <div class="column is-three-quarters-desktop">
+                                <h5 class="title is-5 has-text-centered">{{ chat_room.chat_title }}</h5>
+                            </div>
+                            <div class="column is-narrow">
+                                <div class="buttons is-right">
+                                    <a href="{{ url_for('index.chat_rooms') }}" class="button is-light">
+                                        返回应用列表
+                                    </a>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-auto">
-                            <a href="{{ url_for('index.chat_rooms') }}" class="btn btn-outline-secondary">
-                                返回聊天室列表
-                            </a>
+                    </header>
+                    <div class="card-content">
+                        <div id="conversation">
+                            {% for message in messages %}
+                                {% if message.role == 'user' %}
+                                    <div class="message mine">我： {{ message.content }}</div>
+                                {% else %}
+                                    <div class="message botmsg">Bot: {{ message.content | safe }}</div>
+                                {% endif %}
+                            {% endfor %}
+                            <div id="last-message"></div>
                         </div>
+                        <form>
+                            <div class="field">
+                                <div class="control">
+                                    <input type="text" id="message" class="input" placeholder="Type your message">
+                                </div>
+                            </div>
+                            <div class="field is-grouped">
+                                <div class="control">
+                                    <button type="submit" class="button is-info">发送</button>
+                                </div>
+                                <div class="control">
+                                    <a href="{{ url_for('index.chat_rooms') }}" class="button is-light">
+                                        返回应用列表
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
-                <div class="card-body">
-                    <div id="conversation">
-                        {% for message in messages %}
-                            {#                            <div class="old-msg">#}
-                            {% if message.role == 'user' %}
-                                <div class="message mine">我： {{ message.content | safe }}</div>
-
-                            {% else %}
-                                <div class="message botmsg">Bot: {{ message.content | safe }}</div>
-                            {% endif %}
-                            {#                            </div>#}
-                        {% endfor %}
-                        <div id="last-message"></div>
-                    </div>
-                    <form>
-                        <div class="form-group">
-                            <input type="text" id="message" class="form-control" placeholder="Type your message">
-                        </div>
-                        <div class="col-auto">
-                            <button type="submit" class="btn btn-primary">Send</button>
-                        </div>
-                    </form>
-                </div>
-                <div class="card-body">
-                    <div class="col-auto">
-                        <a href="{{ url_for('index.chat_rooms') }}" class="btn btn-outline-secondary">
-                            返回聊天室列表
-                        </a>
-                    </div>
-                </div>
-                {#                <div class="card-body">#}
-                {#                    <button id="recordButton" type="button">Record</button>#}
-                {#                    <button id="stopButton" type="button" disabled>Stop</button>#}
-                {#                </div>#}
-
             </div>
         </div>
     </div>
-</div>
+</section>
 
-<link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css">
-<link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/4.0.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.2/css/bulma.min.css">
+{#<link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css">#}
+{#<link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/4.0.0/css/bootstrap.min.css">#}
 <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/atom-one-dark.min.css">
 <script src="../static/js/marked.min.js"></script>
 <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.2.0/highlight.min.js"></script>
 <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.6.0/js/bootstrap.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.2/js/bulma.min.js"></script>
 <script src="https://unpkg.com/mic-recorder-to-mp3@2.2.1/dist/index.min.js"></script>
 
 <script>
@@ -84,42 +83,26 @@
     });
     document.querySelectorAll('.botmsg').forEach((box) => {
         box.innerHTML = marked.parse(box.innerHTML)
+        copyCode(box)
     });
     hljs.highlightAll();
+    document.querySelectorAll('code').forEach((code) => {
+        hljs.highlightBlock(code);
+    });
 
     function addMessage(message, className) {
         var conversation = document.getElementById('conversation');
         var div = document.createElement('div');
         div.classList.add('message');
         div.classList.add(className);
-        var isBot = className == "botmsg";
-        div.innerHTML = isBot ? marked.parse(message) : message;
-        conversation.appendChild(div);
-        document.querySelectorAll('code').forEach((code) => {
-            hljs.highlightBlock(code);
-        });
-        if (isBot) {
-            div.querySelectorAll('pre code').forEach((block) => {
-                var copyBtn = document.createElement('button');
-                copyBtn.className = 'btn btn-sm btn-outline-secondary copy-button';
-                copyBtn.textContent = 'Copy';
-                copyBtn.addEventListener('click', function () {
-                    navigator.clipboard.writeText(block.textContent)
-                        .then(() => {
-                            console.log('Text copied to clipboard');
-                            copyBtn.textContent = 'Copied!';
-                            setTimeout(function () {
-                                copyBtn.textContent = 'Copy';
-                            }, 2000);
-                        })
-                        .catch(err => {
-                            console.error('Error in copying text: ', err);
-                        });
-
-                });
-                block.parentNode.insertBefore(copyBtn, block.nextSibling);
-            });
+        if (className == "botmsg") {
+            div.innerHTML = marked.parse(message);
+        } else {
+            div.textContent = message;
         }
+        conversation.appendChild(div);
+
+
         return div
     }
 
@@ -202,13 +185,46 @@
         try {
             var data = JSON.parse(event.data);
             chat_content += data.message;
-            divBox.innerHTML = marked.parse(chat_content);
-            document.querySelectorAll('code').forEach((code) => {
-                hljs.highlightBlock(code);
-            });
+
+            highlightCode(divBox);
+            copyCode(divBox);
+
+
         } catch (err) {
             console.error('Error parsing chat event data:', err);
         }
+    }
+
+    function highlightCode(divBox) {
+        divBox.innerHTML = marked.parse(chat_content);
+        document.querySelectorAll('code').forEach((code) => {
+            hljs.highlightBlock(code);
+        });
+    }
+
+
+    function copyCode(div) {
+        div.querySelectorAll('pre code').forEach((block) => {
+            var copyBtn = document.createElement('button');
+            copyBtn.className = 'btn btn-sm btn-outline-secondary copy-button';
+            copyBtn.textContent = 'Copy';
+            copyBtn.addEventListener('click', function () {
+                navigator.clipboard.writeText(block.textContent)
+                    .then(() => {
+                        console.log('Text copied to clipboard');
+                        copyBtn.textContent = 'Copied!';
+                        setTimeout(function () {
+                            copyBtn.textContent = 'Copy';
+                        }, 2000);
+                    })
+                    .catch(err => {
+                        console.error('Error in copying text: ', err);
+                    });
+
+            });
+            block.parentNode.insertBefore(copyBtn, block.nextSibling);
+        });
+
     }
 
     function onEventSourceError(event) {

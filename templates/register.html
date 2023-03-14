@@ -2,58 +2,72 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>LiteLiteAI</title>
-    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css">
+    <title>小小AI应用</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.2/css/bulma.min.css">
 </head>
 <body>
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-            <div class="card mt-5">
-                <div class="card-header text-center">
-                    <h4>Register</h4>
-                </div>
-                <div class="card-body">
-                    {% with messages = get_flashed_messages() %}
-                        {% if messages %}
-                            <div class="alert alert-danger">
-                                <ul>
-                                    {% for message in messages %}
-                                        <li>{{ message }}</li>
-                                    {% endfor %}
-                                </ul>
+<section class="section">
+    <div class="container">
+        <div class="columns is-centered">
+            <div class="column is-half">
+                <div class="card">
+                    <header class="card-header">
+                        <h4 class="card-header-title">注册</h4>
+                    </header>
+                    <div class="card-content">
+                        {% with messages = get_flashed_messages() %}
+                            {% if messages %}
+                                <div class="notification is-danger">
+                                    <ul>
+                                        {% for message in messages %}
+                                            <li>{{ message }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+                        <form method="POST" action="/register">
+                            <div class="field">
+                                <label class="label" for="inputUsername">用户名</label>
+                                <div class="control">
+                                    <input type="username" class="input" id="inputUsername" placeholder="Username"
+                                           name="username" value="{{ request.form.get('username','') }}">
+                                </div>
                             </div>
-                        {% endif %}
-                    {% endwith %}
-                    <form method="POST" action="/register">
-                        <div class="form-group">
-                            <label for="inputUsername">Username</label>
-                            <input type="username" class="form-control" id="inputUsername" placeholder="Username"
-                                   name="username" value="{{ request.form.get('username','') }}">
-                        </div>
-                        {#                        <div class="form-group">#}
-                        {#                            <label for="inputEmail">Email</label>#}
-                        {#                            <input type="email" class="form-control" id="inputEmail" placeholder="Email" name="email">#}
-                        {#                        </div>#}
-                        <div class="form-group">
-                            <label for="password">Password</label>
-                            <input type="password" class="form-control" id="password" placeholder="Enter password"
-                                   name="password" value="{{ request.form.get('password','') }}">
-                        </div>
-                        <div class="form-group">
-                            <label for="confirm_password">Confirm Password</label>
-                            <input type="password" class="form-control" id="confirm_password"
-                                   placeholder="Confirm password" name="confirm_password"
-                                   value="{{ request.form.get('confirm_password','') }}">
-                        </div>
-                        <button type="submit" class="btn btn-primary">Register</button>
-                    </form>
+                            {# <div class="field">
+                <label class="label" for="inputEmail">Email</label>
+                <div class="control">
+                  <input type="email" class="input" id="inputEmail" placeholder="Email" name="email">
+                </div>
+              </div> #}
+                            <div class="field">
+                                <label class="label" for="password">密码</label>
+                                <div class="control">
+                                    <input type="password" class="input" id="password" placeholder="Enter password"
+                                           name="password" value="{{ request.form.get('password','') }}">
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="label" for="confirm_password">确认密码</label>
+                                <div class="control">
+                                    <input type="password" class="input" id="confirm_password"
+                                           placeholder="Confirm password" name="confirm_password"
+                                           value="{{ request.form.get('confirm_password','') }}">
+                                </div>
+                            </div>
+                            <div class="field is-grouped">
+                                <div class="control">
+                                    <button type="submit" class="button is-primary">注册</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+</section>
 <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.6.0/js/bootstrap.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.2/js/bulma.min.js"></script>
 </body>
 </html>

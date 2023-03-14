@@ -260,6 +260,8 @@ def long_running_task(app_context, messages_data, user_id, chat_id):
                 stream=True
             )
             response_str = ''
+            line = 0
+            publish_str = ''
             for response_json in responses:
                 choice = response_json['choices'][0]
                 if choice['finish_reason'] == 'stop':
@@ -279,10 +281,18 @@ def long_running_task(app_context, messages_data, user_id, chat_id):
                 else:
                     char = choice['text']
 
-                sse.publish({"message": char}, type='chat', channel=chat_id)
-                app.logger.info(char)
-
+                publish_str += char
                 response_str += char
+                line = line + 1
+                if line > 2:
+                    sse.publish({"message": publish_str}, type='chat', channel=chat_id)
+                    app.logger.info(publish_str)
+                    line = 0
+                    publish_str = ''
+            if line != 0 and line <= 2:
+                sse.publish({"message": publish_str}, type='chat', channel=chat_id)
+                app.logger.info(publish_str)
+
             message = Message(role="assistant", content=response_str, user_id=user_id, chat_id=chat_id)
             db.session.add(message)
             db.session.commit()

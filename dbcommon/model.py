@@ -28,7 +28,7 @@ class Message(db.Model):
 class ChatRoom(db.Model):
     __tablename__ = 'chat'
     id = db.Column(db.Integer, primary_key=True)
-    chat_title = db.Column(db.String(30), nullable=True, default="默认聊天室")
+    chat_title = db.Column(db.String(30), nullable=True, default="默认AI应用")
     chat_id = db.Column(db.String(30), nullable=True)
     setting = db.Column(db.String(10))
     status = db.Column(db.Integer, default=1)
