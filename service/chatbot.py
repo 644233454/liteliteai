@@ -1,9 +1,7 @@
 import json
 import os
-import platform
 from concurrent.futures import ThreadPoolExecutor
 
-import nltk
 import openai
 from flask import current_app as app
 from flask import request, session, Blueprint
@@ -18,12 +16,7 @@ openai.organization = "org-hlaTEbggCCVQCzEteX8SI3NE"
 openai.api_key = os.getenv("OPENAI_API_KEY")
 openai_chat_model = "gpt-3.5-turbo"
 
-if platform.system() != 'Linux':
-    openai.proxy = common.proxies
-    nltk.set_proxy(f'socks5://{common.proxy_host}:{common.proxy_port}')
-
 chatbot_bp = Blueprint('chatbot', __name__)
-
 
 executor = ThreadPoolExecutor(max_workers=2)
 

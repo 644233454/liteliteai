@@ -175,7 +175,7 @@ if __name__ == '__main__':
     # # text_with_newlines = re.sub("\\", "", result)
     # print(result)
 
-    application = ApplicationBuilder().token(token).proxy_url(f'http://{proxy_host}:{proxy_port}').build()
+    application = ApplicationBuilder().token(token).build()
 
     start_handler = CommandHandler('start', start)
     image_handler = CommandHandler('image', image)

@@ -4,9 +4,3 @@ help_msg = "你好，我是AI聊天机器人，你可以发送任意内容给我
            "关机：我将不再回复除以下指令外的任何内容  \n" \
            "开机：我将正常回复任意内容  \n" \
            "帮助/菜单：我将发送本段文本"
-
-proxy_host = "127.0.0.1"
-proxy_port = "7890"
-
-proxies = {'http': f'socks5://{proxy_host}:{proxy_port}',
-           'https': f'socks5://{proxy_host}:{proxy_port}'}
