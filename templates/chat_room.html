@@ -142,7 +142,7 @@
                 hideLoading();
                 if (xhr.status === 200) {
                     if (xhr.responseText) {
-                        divBox = addMessage('Bot：' + (xhr.responseText));
+                        divBox = addMessage('Bot：' + (xhr.responseText), "botmsg");
                     } else {
                         chat_content = 'Bot：';
                         divBox = addMessage(chat_content);
