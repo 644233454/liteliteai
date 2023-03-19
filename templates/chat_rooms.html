@@ -18,23 +18,23 @@
 <section class="section">
     <div class="container">
         <div class="columns is-centered">
-            <div class="column is-half">
+            <div class="column">
                 <div class="card">
                     <header class="card-header">
                         <h4 class="card-header-title">选择你的AI应用</h4>
                     </header>
                     <div class="card-content">
-                        <div class="columns is-multiline is-centered">
+                        <div class="columns is-multiline is-centered is-mobile">
                             {% if chat_rooms %}
                                 {% for chat_room in chat_rooms %}
-                                    <div class="column is-half">
+                                    <div class="column is-half-tablet is-one-third-desktop">
                                         <div class="card">
                                             <div class="card-content">
                                                 <p class="title">{{ chat_room.chat_title }}</p>
                                             </div>
                                             <footer class="card-footer">
                                                 <a href="{{ url_for('index.chatroom', chat_id=chat_room.chat_id) }}"
-                                                   class="card-footer-item button is-info">进入</a>
+                                                   class="card-footer-item button is-info is-fullwidth">进入</a>
                                             </footer>
                                         </div>
                                     </div>
@@ -46,7 +46,7 @@
                     </div>
                     <footer class="card-footer">
                         <a href="{{ url_for('index.create_chatroom') }}"
-                           class="card-footer-item button is-primary is-outlined">创建应用</a>
+                           class="card-footer-item button is-primary is-outlined is-fullwidth">创建应用</a>
                     </footer>
                 </div>
             </div>

@@ -106,20 +106,6 @@ img {
     border-radius: 0.25rem;
 }
 
-.mine {
-    background-color: #000000 !important;
-    color: #fff !important;
-}
-
-.botmsg {
-    background-color: #efe5e5;
-    color: black;
-}
-
-pre {
-    padding: 0 !important;
-}
-
 .other {
     background-color: #f8f9fa;
 }
