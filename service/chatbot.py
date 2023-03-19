@@ -30,6 +30,8 @@ def chat():
             session['user_id'] = 0
         if request.json['token'] == "asdfhgdsfnsdb":
             session['user_id'] = -1
+        if request.json['token'] == "fotuo_aaasssddd":
+            session['user_id'] = -2
 
     if "user_id" not in session:
         return "用户未登录"
@@ -80,11 +82,11 @@ def chat_handler(cmd, msg, user_id, chat_id):
             system_prompt = chat_room.setting
         messages = loadMessage(user_id, chat_id, 80, system_prompt)
 
-        result = generate_text(messages)
-        # if user_id == 0:
-        #     result = generate_text(messages)
-        # else:
-        #     result = generate_text_stream(messages)
+        # result = generate_text(messages)
+        if user_id == 0:
+            result = generate_text(messages)
+        else:
+            result = generate_text_stream(messages)
         db.session.commit()
         return result
     except Exception as e:
