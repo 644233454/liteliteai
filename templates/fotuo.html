@@ -60,7 +60,6 @@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.2/css/bulma.min.css">
 <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.2/js/bulma.min.js"></script>
 <script src="https://unpkg.com/mic-recorder-to-mp3@2.2.1/dist/index.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js"></script>
 
@@ -105,11 +104,11 @@
     const socket = io.connect(socketUrl);
     socket.emit('join', {'chat_id': chat_id});
 
-    socket.on('fotuo', function (data) {
+    socket.on('chat_ws', function (data) {
         if (data.chat_id === chat_id) {
             hideLoading();
             chat_content += data.message;
-            divBox.innerHTML = marked.parse(chat_content);
+            divBox.innerHTML = chat_content;
         }
     });
 
@@ -125,11 +124,11 @@
 
         document.getElementById('message').value = '';
 
-        socket.emit('fotuo', {
+        socket.emit('fotuo_ws', {
             'msg': msg,
             'chat_id': chat_id
         });
-        chat_content = 'Bot：';
+        chat_content = '佛曰：';
         divBox = addMessage(chat_content);
     }
 

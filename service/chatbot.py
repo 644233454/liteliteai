@@ -28,8 +28,8 @@ def create_chatbot_bp(socketio):
         chat_id = data['chat_id']
         join_room(chat_id)
 
-    @socketio.on('fotuo')
-    def handle_chat_ws(data):
+    @socketio.on('fotuo_ws')
+    def fotuo_ws(data):
         msg = data['msg']
 
         user_id = -2
@@ -40,9 +40,12 @@ def create_chatbot_bp(socketio):
             send_msg = Message(role="user", content=msg, user_id=user_id, chat_id=chat_id)
             db.session.add(send_msg)
             messages = [
-                Message(role="system", content="请你扮演佛祖角色", user_id=user_id, chat_id=chat_id),
-                Message(role="system", content="你需要以佛祖说话的风格进行回复", user_id=user_id, chat_id=chat_id),
-                Message(role="system", content="你只需要回复问题，不要说多余的话", user_id=user_id, chat_id=chat_id),
+                Message(role="system", content="请你扮演佛祖角色，以佛祖大慈大悲的风格进行回复，循循善诱，"
+                                               "作为佛祖可以适当引用佛经典故作为你自己的话说出，"
+                                               "可以有一定的古文，我是你的弟子，"
+                                               "只需要回复问题，不要说多余的话，"
+                                               "回复的内容尽量达到200字以上",
+                        user_id=user_id, chat_id=chat_id),
                 send_msg,
             ]
             generate_text_stream(socketio, messages)
@@ -54,7 +57,7 @@ def create_chatbot_bp(socketio):
         finally:
             db.session.close()
 
-    @socketio.on('chat_ws')
+    @socketio.on('send_msg')
     def handle_chat_ws(data):
         msg = data['msg']
 
@@ -315,8 +318,6 @@ def generate_text_stream(socketio, messages):
             stream=True
         )
         response_str = ''
-        # line = 0
-        publish_str = ''
         for response_json in responses:
             choice = response_json['choices'][0]
             if choice['finish_reason'] == 'stop':
@@ -335,7 +336,6 @@ def generate_text_stream(socketio, messages):
             else:
                 char = choice['text']
 
-            publish_str += char
             response_str += char
             socketio.emit('chat_ws', {'chat_id': chat_id, 'message': char}, room=chat_id)
             app.logger.info(char)
