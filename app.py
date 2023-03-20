@@ -45,7 +45,6 @@ def create_app():
     app.app_context().push()
 
     socketio.init_app(app=app, async_mode='eventlet', engineio_logger=True)
-    # socketio.init_app(app=app, async_mode='threading', engineio_logger=True)
 
     return app
 

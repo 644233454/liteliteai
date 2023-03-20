@@ -176,6 +176,10 @@
         }
     });
 
+    socket.on('reconnect', (attemptNumber) => {
+        console.log(`WebSocket重连成功，重连次数：${attemptNumber}`);
+        socket.emit('join_room', {'chat_id': chat_id}); // 重连成功后重新加入房间
+    });
 
     function sendMessage(event) {
         event.preventDefault();
