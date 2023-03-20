@@ -48,7 +48,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     }
     data = {
         "msg": '帮助',
-        "token": "asdfhgdsfnsdb",
+        "token": "telegram_bjkfhebxogdb",
         "chat_id": f"image_{update.effective_chat.id}",
         "user_id": update.message.from_user.id
     }

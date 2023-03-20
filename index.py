@@ -15,6 +15,10 @@ def index():
     return redirect(url_for('index.chatroom'))
 
 
+@index_bp.route('/fotuo', endpoint='fotuo')
+def fotuo():
+    return render_template("fotuo.html")
+
 @index_bp.route('/chatroom', endpoint='chatroom')
 def chatroom():
     if 'user_id' in session:
