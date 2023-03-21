@@ -2,7 +2,8 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler
 
-from flask import Flask
+import eventlet
+from flask import Flask, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_socketio import SocketIO
@@ -44,12 +45,20 @@ def create_app():
 
     app.app_context().push()
 
-    socketio.init_app(app=app, async_mode='eventlet', engineio_logger=True)
+    # socketio.init_app(app=app, async_mode='eventlet', engineio_logger=True)
+    socketio.init_app(app=app, async_mode='threading', engineio_logger=True)
 
     return app
 
 
 app = create_app()
 
+
+@app.route('/<path:path>')
+def send_html(path):
+    return send_from_directory('./static', path)
+
 if __name__ == '__main__':
+    # eventlet.monkey_patch()
+    # socketio.run(app)
     app.run()

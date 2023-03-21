@@ -1,6 +1,5 @@
 import json
 import os
-from concurrent.futures import ThreadPoolExecutor
 
 import openai
 from flask import current_app as app
@@ -16,8 +15,6 @@ openai.organization = "org-hlaTEbggCCVQCzEteX8SI3NE"
 openai.api_key = os.getenv("OPENAI_API_KEY")
 openai_chat_model = "gpt-3.5-turbo"
 
-executor = ThreadPoolExecutor(max_workers=2)
-
 
 # 在创建 chatbot_bp 时，接收传递的 socketio 参数
 def create_chatbot_bp(socketio):
@@ -27,6 +24,11 @@ def create_chatbot_bp(socketio):
     def on_join(data):
         chat_id = data['chat_id']
         join_room(chat_id)
+
+    @socketio.on('connect')
+    def on_connect():
+        print('Client connected')
+        socketio.emit('message', {'data': 'Connected to server'})
 
     @socketio.on('fotuo_ws')
     def fotuo_ws(data):
