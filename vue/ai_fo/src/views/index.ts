@@ -1,0 +1,1 @@
+export { default as MainView } from './main_view.vue' 
