@@ -23,7 +23,7 @@ def create_chatbot_bp(socketio):
     @socketio.on('join')
     def on_join(data):
         chat_id = data['chat_id']
-        join_room(chat_id)
+        join_room(chat_id + "_" + request.sid)
 
     @socketio.on('connect')
     def on_connect():
