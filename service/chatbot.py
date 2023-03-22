@@ -1,58 +1,147 @@
 import json
 import os
-import platform
-from concurrent.futures import ThreadPoolExecutor
 
-import nltk
 import openai
-from flask import current_app as app, Response
+from flask import current_app as app
 from flask import request, session, Blueprint
-from flask_executor import Executor
-from flask_sse import sse
 from openai import InvalidRequestError
+from flask_socketio import join_room
 
 import common
-from app import db
+from app import db, socketio
 from dbcommon import Message, ChatRoom
 
 openai.organization = "org-hlaTEbggCCVQCzEteX8SI3NE"
 openai.api_key = os.getenv("OPENAI_API_KEY")
 openai_chat_model = "gpt-3.5-turbo"
 
-if platform.system() != 'Linux':
-    openai.proxy = common.proxies
-    nltk.set_proxy(f'socks5://{common.proxy_host}:{common.proxy_port}')
 
-chatbot_bp = Blueprint('chatbot', __name__)
-executor = ThreadPoolExecutor(max_workers=4)
+# 在创建 chatbot_bp 时，接收传递的 socketio 参数
+def create_chatbot_bp(socketio):
+    chatbot_bp = Blueprint('chatbot', __name__)
+
+    @socketio.on('join')
+    def on_join(data):
+        chat_id = data['chat_id']
+        join_room(chat_id)
+
+    @socketio.on('connect')
+    def on_connect():
+        print('Client connected')
+        socketio.emit('message', {'data': 'Connected to server'})
+
+    @socketio.on('fotuo_ws')
+    def fotuo_ws(data):
+        msg = data['msg']
+
+        user_id = -2
+
+        chat_id = "chat_app_fotuo"
+
+        try:
+            send_msg = Message(role="user", content=msg, user_id=user_id, chat_id=chat_id)
+            db.session.add(send_msg)
+            messages = [
+                Message(role="system", content="请你扮演佛祖角色，以佛祖大慈大悲的风格进行回复，循循善诱，"
+                                               "作为佛祖可以适当引用佛经典故作为你自己的话说出，"
+                                               "可以有一定的古文，我是你的弟子，"
+                                               "只需要回复问题，不要说多余的话，"
+                                               "回复的内容尽量达到200字以上",
+                        user_id=user_id, chat_id=chat_id),
+                send_msg,
+            ]
+            generate_text_stream(socketio, messages)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(e)
+            return "网络异常"
+        finally:
+            db.session.close()
+
+    @socketio.on('send_msg')
+    def handle_chat_ws(data):
+        msg = data['msg']
+
+        if "user_id" not in session:
+            return "用户未登录"
+        user_id = session['user_id']
+
+        chat_id = f"chat_user_{user_id}"
+        if 'chat_id' in data:
+            chat_id = data['chat_id']
+
+        parts = msg.split(" ", 1)
+        cmd = parts[0]
+        msg = parts[1] if len(parts) > 1 else ""
+        result = handle_command(cmd, msg, user_id, chat_id, socketio)
+
+        if result is not None:
+            socketio.emit('chat_ws', {'chat_id': chat_id, 'message': result}, room=chat_id)
+        else:
+            socketio.emit('chat_ws_end', {'chat_id': chat_id, 'message': "end"}, room=chat_id)
+
+    @chatbot_bp.route('/chat', methods=['POST'])
+    def chat():
+        msg = request.json['msg']
+
+        if 'token' in request.json:
+            if request.json['token'] == "telegram_bjkfhebxogdb":
+                session['user_id'] = 0
+            if request.json['token'] == "asdfhgdsfnsdb":
+                session['user_id'] = -1
+            if request.json['token'] == "fotuo_cjsbdfiwerfgfbv":
+                session['user_id'] = -2
+
+        if "user_id" not in session:
+            return "用户未登录"
+        user_id = session['user_id']
+
+        chat_id = f"chat_user_{user_id}"
+        if 'chat_id' in request.json:
+            chat_id = request.json['chat_id']
+
+        parts = msg.split(" ", 1)
+        cmd = parts[0]
+        msg = parts[1] if len(parts) > 1 else ""
+        result = handle_command(cmd, msg, user_id, chat_id, None)
+        return result
+
+    @chatbot_bp.route('/image', methods=['POST'])
+    def image():
+        msg = request.json['msg']
+
+        if 'token' in request.json:
+            if request.json['token'] == "telegram_bjkfhebxogdb":
+                session['user_id'] = 0
+            if request.json['token'] == "asdfhgdsfnsdb":
+                session['user_id'] = -1
+        if "user_id" not in session:
+            return "用户未登录"
+        user_id = session['user_id']
+
+        try:
+            with db.session.no_autoflush:
+                image_chat_id = f"image_chat_user_{user_id}"
+                img_msg = Message(role="user", content=msg, user_id=user_id, chat_id=image_chat_id)
+                db.session.add(img_msg)
+                result = generate_image(img_msg)
+            db.session.commit()
+            return result
+        except:
+            db.session.rollback()
+            raise
+        finally:
+            db.session.close()
+
+    return chatbot_bp
 
 
-@chatbot_bp.route('/chat', methods=['POST'])
-def chat():
-    msg = request.json['msg']
-
-    if 'token' in request.json:
-        if request.json['token'] == "telegram_bjkfhebxogdb":
-            session['user_id'] = 0
-        if request.json['token'] == "asdfhgdsfnsdb":
-            session['user_id'] = -1
-
-    if "user_id" not in session:
-        return "用户未登录"
-    user_id = session['user_id']
-
-    chat_id = f"chat_user_{user_id}"
-    if 'chat_id' in request.json:
-        chat_id = request.json['chat_id']
-
-    parts = msg.split(" ", 1)
-    cmd = parts[0]
-    msg = parts[1] if len(parts) > 1 else ""
-    result = handle_command(cmd, msg, user_id, chat_id)
-    return result
+# 修改蓝图初始化的方式
+chatbot_bp = create_chatbot_bp(socketio)
 
 
-def handle_command(cmd, msg, user_id, chat_id):
+def handle_command(cmd, msg, user_id, chat_id, socketio):
     commands = {
         "设置风格": setting_handler,
         "图片": image_handler,
@@ -65,10 +154,10 @@ def handle_command(cmd, msg, user_id, chat_id):
     }
 
     handler = commands.get(cmd, chat_handler)
-    return handler(cmd, msg, user_id, chat_id)
+    return handler(cmd, msg, user_id, chat_id, socketio)
 
 
-def chat_handler(cmd, msg, user_id, chat_id):
+def chat_handler(cmd, msg, user_id, chat_id, socketio):
     chat_room = ChatRoom.query.filter_by(user_id=user_id, chat_id=chat_id).limit(
         1).first()
     if chat_room is None:
@@ -86,10 +175,11 @@ def chat_handler(cmd, msg, user_id, chat_id):
             system_prompt = chat_room.setting
         messages = loadMessage(user_id, chat_id, 80, system_prompt)
 
+        # result = generate_text(messages)
         if user_id == 0:
             result = generate_text(messages)
         else:
-            result = generate_text_stream(messages)
+            result = generate_text_stream(socketio, messages)
         db.session.commit()
         return result
     except Exception as e:
@@ -100,7 +190,7 @@ def chat_handler(cmd, msg, user_id, chat_id):
         db.session.close()
 
 
-def image_handler(cmd, msg, user_id, chat_id):
+def image_handler(cmd, msg, user_id, chat_id, socketio):
     result = "网络异常"
     image_chat_id = f"image_{chat_id}"
     try:
@@ -142,33 +232,6 @@ def image_handler(cmd, msg, user_id, chat_id):
 
 
 #
-@chatbot_bp.route('/image', methods=['POST'])
-def image():
-    msg = request.json['msg']
-
-    if 'token' in request.json:
-        if request.json['token'] == "telegram_bjkfhebxogdb":
-            session['user_id'] = 0
-        if request.json['token'] == "asdfhgdsfnsdb":
-            session['user_id'] = -1
-    if "user_id" not in session:
-        return "用户未登录"
-    user_id = session['user_id']
-
-    try:
-        with db.session.no_autoflush:
-            image_chat_id = f"image_chat_user_{user_id}"
-            img_msg = Message(role="user", content=msg, user_id=user_id, chat_id=image_chat_id)
-            db.session.add(img_msg)
-            result = generate_image(img_msg)
-        db.session.commit()
-        return result
-    except:
-        db.session.rollback()
-        raise
-    finally:
-        db.session.close()
-
 
 # @chatbot_bp.route('/voice', methods=['POST'])
 # def voice():
@@ -241,60 +304,53 @@ def generate_text(messages):
     return assistant['content'].strip()
 
 
-def generate_text_stream(messages):
+def generate_text_stream(socketio, messages):
     messages_data = [{'role': message.role, 'content': message.content} for message in messages]
 
     app.logger.info(json.dumps(messages_data, ensure_ascii=False))
 
     user_id = messages[0].user_id
     chat_id = messages[0].chat_id
+    try:
+        responses = openai.ChatCompletion.create(
+            model=openai_chat_model,
+            messages=messages_data,
+            user=f"{chat_id}",
+            temperature=0.5,
+            stream=True
+        )
+        response_str = ''
+        for response_json in responses:
+            choice = response_json['choices'][0]
+            if choice['finish_reason'] == 'stop':
+                break
+            # error handling
+            if choice['finish_reason'] == 'length':
+                # socketio.emit('chat_ws', {'chat_id': chat_id, 'message': "内容过长"}, room=chat_id)
+                break
 
-    executor.submit(long_running_task, app.app_context(), messages_data, user_id, chat_id)
-    return ''
-
-
-def long_running_task(app_context, messages_data, user_id, chat_id):
-    with app_context:
-        try:
-            responses = openai.ChatCompletion.create(
-                model=openai_chat_model,
-                messages=messages_data,
-                user=f"{chat_id}",
-                temperature=0.5,
-                stream=True
-            )
-            response_str = ''
-            for response_json in responses:
-                choice = response_json['choices'][0]
-                if choice['finish_reason'] == 'stop':
-                    break
-                # error handling
-                if choice['finish_reason'] == 'length':
-                    # sse.publish(chat_id, data='内容过长', event='user_' + user_id)
-                    sse.publish({"message": "内容过长"}, type='message', channel=chat_id)
-                    break
-
-                if 'gpt-3.5-turbo' in openai_chat_model:
-                    delta = choice['delta']
-                    if "role" in delta or delta == {}:
-                        char = ''
-                    else:
-                        char = delta['content']
+            if 'gpt-3.5-turbo' in openai_chat_model:
+                delta = choice['delta']
+                if "role" in delta or delta == {}:
+                    char = ''
                 else:
-                    char = choice['text']
+                    char = delta['content']
+            else:
+                char = choice['text']
 
-                sse.publish({"message": char}, type='chat', channel=chat_id)
+            response_str += char
+            socketio.emit('chat_ws', {'chat_id': chat_id, 'message': char}, room=chat_id)
+            app.logger.info(char)
 
-                response_str += char
-            message = Message(role="assistant", content=response_str, user_id=user_id, chat_id=chat_id)
-            db.session.add(message)
-            db.session.commit()
-        except InvalidRequestError as e:
-            app.logger.error(e)
-            pass
-        except Exception as e:
-            app.logger.error(e)
+        message = Message(role="assistant", content=response_str, user_id=user_id, chat_id=chat_id)
+        db.session.add(message)
+        db.session.commit()
+    except InvalidRequestError as e:
+        app.logger.error(e)
         pass
+    except Exception as e:
+        app.logger.error(e)
+    pass
 
 
 def generate_image(msg):
@@ -334,11 +390,11 @@ def read_voice(file_path):
     return result.data[0].text
 
 
-def help_handler(cmd, msg, user_id, chat_id):
+def help_handler(cmd, msg, user_id, chat_id, socketio):
     return common.help_msg
 
 
-def setting_handler(cmd, msg, user_id, chat_id):
+def setting_handler(cmd, msg, user_id, chat_id, socketio):
     try:
         chat_room = ChatRoom.query.filter_by(user_id=user_id, chat_id=chat_id).limit(
             1).first()
@@ -357,7 +413,7 @@ def setting_handler(cmd, msg, user_id, chat_id):
         db.session.close()
 
 
-def stop_handler(cmd, msg, user_id, chat_id):
+def stop_handler(cmd, msg, user_id, chat_id, socketio):
     try:
         chat_room = ChatRoom.query.filter_by(user_id=user_id, chat_id=chat_id).limit(
             1).first()
@@ -376,7 +432,7 @@ def stop_handler(cmd, msg, user_id, chat_id):
         db.session.close()
 
 
-def start_handler(cmd, msg, user_id, chat_id):
+def start_handler(cmd, msg, user_id, chat_id, socketio):
     try:
         chat_room = ChatRoom.query.filter_by(user_id=user_id, chat_id=chat_id).limit(
             1).first()

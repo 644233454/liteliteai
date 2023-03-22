@@ -2,25 +2,33 @@
 <html>
 <head>
     <meta charset="utf-8">
-        <title>LiteLiteAI</title>
-    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css">
+    <title>小小AI应用</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.2/css/bulma.min.css">
 </head>
 <body>
-<div class="container">
-    <h1>新增聊天室</h1>
-    <form method="POST" action="{{ url_for('index.add_chatroom') }}">
-        <div class="form-group">
-            <label for="chat_title">聊天室标题</label>
-            <input type="text" class="form-control" id="chat_title" name="chat_title" required>
-        </div>
-        <div class="form-group">
-            <label for="setting">机器人风格</label>
-            <small id="settingHelp"
-                   class="form-text text-muted">请输入机器人的风格，例如“温柔体贴”、“幽默风趣”、“严肃专业”等。</small>
-            <textarea class="form-control" id="setting" name="setting" rows="3"></textarea>
-        </div>
-        <button type="submit" class="btn btn-primary">保存</button>
-    </form>
-</div>
+<section class="section">
+    <div class="container">
+        <h1 class="title">新增AI应用</h1>
+        <form method="POST" action="{{ url_for('index.add_chatroom') }}">
+            <div class="field">
+                <label class="label" for="chat_title">AI应用标题</label>
+                <div class="control">
+                    <input type="text" class="input" id="chat_title" name="chat_title" required>
+                </div>
+            </div>
+            <div class="field">
+                <label class="label" for="setting">AI应用功能描述</label>
+                <div class="control">
+                    <textarea class="textarea" id="setting" name="setting" rows="3"></textarea>
+                    <p class="help is-small">请输入AI机器人的风格，例如“温柔体贴”、“幽默风趣”、“严肃专业”等。</p>
+                </div>
+            </div>
+            <div class="field is-grouped">
+                <div class="control">
+                    <button type="submit" class="button is-primary">保存</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
 <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.6.0/js/bootstrap.min.js"></script

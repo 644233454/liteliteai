@@ -48,12 +48,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     }
     data = {
         "msg": '帮助',
-        "token": "asdfhgdsfnsdb",
+        "token": "telegram_bjkfhebxogdb",
         "chat_id": f"image_{update.effective_chat.id}",
         "user_id": update.message.from_user.id
     }
 
-    response = requests.post("http://127.0.0.1:12380/chat", headers=headers, data=json.dumps(data))
+    response = requests.post("http://127.0.0.1:5000/chat", headers=headers, data=json.dumps(data))
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response.text,
                                    reply_to_message_id=update.message.message_id)
@@ -67,10 +67,9 @@ async def image(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "msg": update.message.text,
         "token": "telegram_bjkfhebxogdb",
         "chat_id": f"image_{update.effective_chat.id}",
-        "user_id": update.message.from_user.id
     }
 
-    response = requests.post("http://127.0.0.1:12380/image", headers=headers, data=json.dumps(data))
+    response = requests.post("http://127.0.0.1:5000/image", headers=headers, data=json.dumps(data))
 
     result = response.text
     logging.info(result)
@@ -97,7 +96,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "user_id": update.message.from_user.id
     }
 
-    response = requests.post("http://127.0.0.1:12380/chat", headers=headers, data=json.dumps(data))
+    response = requests.post("http://127.0.0.1:5000/chat", headers=headers, data=json.dumps(data))
 
     result = response.text
     logging.info(result)

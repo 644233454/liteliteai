@@ -2,13 +2,15 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler
 
-from flask import Flask
+import eventlet
+from flask import Flask, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from flask_sse import sse
+from flask_socketio import SocketIO
 
 db = SQLAlchemy()
 migrate = Migrate()
+socketio = SocketIO()
 
 
 def create_app():
@@ -36,14 +38,15 @@ def create_app():
     migrate.init_app(app, db)
 
     from service.chatbot import chatbot_bp
-    app.register_blueprint(chatbot_bp)
+    app.register_blueprint(chatbot_bp, socketio=socketio)
 
     from index import index_bp
     app.register_blueprint(index_bp)
 
     app.app_context().push()
 
-    app.register_blueprint(sse, url_prefix='/stream')
+    # socketio.init_app(app=app, async_mode='eventlet', engineio_logger=True)
+    socketio.init_app(app=app, async_mode='threading', engineio_logger=True)
 
     return app
 
@@ -51,6 +54,11 @@ def create_app():
 app = create_app()
 
 
+@app.route('/<path:path>')
+def send_html(path):
+    return send_from_directory('./static', path)
 
 if __name__ == '__main__':
+    # eventlet.monkey_patch()
+    # socketio.run(app)
     app.run()
