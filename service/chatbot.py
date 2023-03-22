@@ -36,7 +36,8 @@ def create_chatbot_bp(socketio):
 
         user_id = -2
 
-        chat_id = "chat_app_fotuo"
+        chat_id = data['chat_id']
+        chat_id = chat_id + "_" + request.sid
 
         try:
             send_msg = Message(role="user", content=msg, user_id=user_id, chat_id=chat_id)
