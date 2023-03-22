@@ -2,7 +2,7 @@
   <div class="content">
    <div class='head'>
     <div class="back_view">
-     
+
      <div class="left"></div>
      <van-image class="logo"  :src="MainHead"></van-image>
     </div>
@@ -11,10 +11,10 @@
      </div>
    </div>
    <div class="bottom">
-     <van-field 
+     <van-field
        type="textarea"
        class="input"
-       v-model="content" 
+       v-model="content"
        autosize
        placeholder="佛祖，人生的意义是什么？" />
      <div class="input-tip">请不要输入个人信息。此外，如果有关于佛教方面的任何不准确之处，请宽容地接受。</div>
@@ -42,8 +42,8 @@
      </div>
    </div>
   </div>
- 
- 
+
+
  </template>
  <script setup lang='ts'>
  import { ref,nextTick,onMounted } from 'vue'
@@ -51,7 +51,8 @@
  import ReplyIcon from '@/assets/reply_icon.svg'
  import { QuestionList} from '@/components'
  import { useClipboard } from '@vueuse/core'
- import { showToast } from 'vant';
+ import { showToast } from 'vant'
+ import { io } from 'socket.io-client';
 
 //  问题
  const content = ref()
@@ -61,17 +62,36 @@
  const replyLoading = ref(false)
 //  是否展示回复内容的界面
  const showReply = ref(false)
- 
+
 //  回复的内容
  const replyText = ref('')
 // 粘贴板
  const { copy } = useClipboard()
-//  TODO 需要接入websocket
+
  const chat_id = "chat_app_fotuo"
- 
+
+ // socket
+ const socket = io("/");
+ // 监听 chat_ws 消息事件
+ socket.on("chat_ws", ({chat_id: receivedChatId, message: content}) => {
+   if (receivedChatId === chat_id) {
+     // 处理收到的消息
+     replyText.value += content;
+     document.body.scroll({
+       top: document.body.scrollHeight,
+       behavior: "smooth",
+     });
+   }
+ });
+ socket.on('connect', () => {
+   console.log('Connected to server');
+   socket.emit('join', {'chat_id': chat_id});
+ });
+
+
 // 界面加载完毕事件
  onMounted(()=>{
- 
+
 
  })
 // 复制当前url
@@ -98,37 +118,39 @@
       console.error(err)
     }
 }
-//  点击咨询按钮 
-// TODO 需要接入推流数据
+//  点击咨询按钮
  const reply = ()=>{
    console.log('佛陀回答');
 
-
+  socket.emit('fotuo_ws', {
+            'msg': content.value,
+            'chat_id': chat_id
+        });
+    showReply.value = true
 
 // 以下是测试数据  接入实际数据时 需要删掉
-   timeCount.value = 0
-   replyLoading.value = true
-    // 模拟网络数据
-  const time =  setInterval(()=>{
-    if(timeCount.value >= 10){
-      clearInterval(time)
-    }
-    timeCount.value++,
-    console.log('我是定时器')
-    replyText.value = replyText.value + '我是定时器'
-    document.body.scroll({
-      top: document.body.scrollHeight,
-      behavior: 'smooth'
-    })
-  },1000)
-   setTimeout(() => {
-     replyLoading.value = false
-     showReply.value = true
-   }, 1000);
- 
+//    timeCount.value = 0
+//    replyLoading.value = true
+//     // 模拟网络数据
+//   const time =  setInterval(()=>{
+//     if(timeCount.value >= 10){
+//       clearInterval(time)
+//     }
+//     timeCount.value++,
+//     console.log('我是定时器')
+//     replyText.value = replyText.value + '我是定时器'
+//     document.body.scroll({
+//       top: document.body.scrollHeight,
+//       behavior: 'smooth'
+//     })
+//   },1000)
+//    setTimeout(() => {
+//      replyLoading.value = false
+//      showReply.value = true
+//    }, 1000);
+
  }
- 
- 
+
  </script>
  <style lang='scss' scoped>
  .content{
@@ -210,7 +232,7 @@
          .reply_content_title{
            height: 42px;
            line-height: 22px
-           
+
          }
          .reply_content_info{
            margin-top: 5px;
@@ -250,6 +272,6 @@
        }
    }
  }
- 
- 
+
+
  </style>

@@ -21,8 +21,13 @@
 import { ref,onMounted,nextTick } from 'vue'
 import Close from '@/assets/close.svg'
 
+
+interface ListItem {
+  text: string;
+}
+
 const count = ref(3423)
-const list = ref([])
+const list = ref<ListItem[]>([])
 const visible = ref(false)
 const title = ref("为什么会一段时间一段时间感觉自己处于逆境中")
 const content = ref("亲爱的朋友，我理解你的感受。有时候我们会感到自己处于逆境中，。")

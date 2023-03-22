@@ -1,7 +1,6 @@
-restart.sh
-stop.sh
 .idea
 __pycache__
 logs
 instance/*.db
 instance/messages.db-journal
+vue/ai_fo/node_modules
