@@ -68,7 +68,18 @@
 // 粘贴板
  const { copy } = useClipboard()
 
- const chat_id = "chat_app_fotuo"
+ function generateRandomString(): string {
+  const length = 10;
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+}
+
+
+ const chat_id = "chat_app_fotuo_" + generateRandomString()
 
  // socket
  const socket = io("/");

@@ -23,7 +23,7 @@ def create_chatbot_bp(socketio):
     @socketio.on('join')
     def on_join(data):
         chat_id = data['chat_id']
-        join_room(chat_id + "_" + request.sid)
+        join_room(chat_id)
 
     @socketio.on('connect')
     def on_connect():
@@ -37,7 +37,6 @@ def create_chatbot_bp(socketio):
         user_id = -2
 
         chat_id = data['chat_id']
-        chat_id = chat_id + "_" + request.sid
 
         try:
             send_msg = Message(role="user", content=msg, user_id=user_id, chat_id=chat_id)
