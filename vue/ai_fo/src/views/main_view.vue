@@ -38,7 +38,7 @@
        </div>
      </div>
      <div class="reply_content" v-else>
-       <QuestionList class="question_view"/>
+<!--       <QuestionList class="question_view"/>-->
      </div>
    </div>
   </div>
@@ -119,14 +119,19 @@
     }
 }
 //  点击咨询按钮
- const reply = ()=>{
+ const reply = () => {
    console.log('佛陀回答');
+   if (!content.value) {
+     content.value = '佛祖，人生的意义是什么？'
+   }
+   replyText.value = '';
 
-  socket.emit('fotuo_ws', {
-            'msg': content.value,
-            'chat_id': chat_id
-        });
-    showReply.value = true
+
+   socket.emit('fotuo_ws', {
+     'msg': content.value,
+     'chat_id': chat_id
+   });
+   showReply.value = true
 
 // 以下是测试数据  接入实际数据时 需要删掉
 //    timeCount.value = 0
