@@ -1,7 +1,7 @@
 import uuid
 
 import markdown
-from flask import request, render_template, session, Blueprint, flash, redirect, url_for
+from flask import request, render_template, session, Blueprint, flash, redirect, url_for, send_from_directory
 
 import common
 from app import db
@@ -18,6 +18,24 @@ def index():
 @index_bp.route('/fotuo', endpoint='fotuo')
 def fotuo():
     return render_template("fotuo.html")
+
+
+@index_bp.route('/fo/', endpoint='fo')
+def fo():
+    # 将用户重定向到 /fo/index.html
+    return send_from_directory('./static', 'fo/index.html')
+
+
+@index_bp.route('/fo/<path:filename>')
+def fo_files(filename):
+    # 将用户请求的文件发送给用户
+    return send_from_directory('./static', f'fo/{filename}')
+
+
+@index_bp.route('/<path:path>')
+def send_html(path):
+    return send_from_directory('./static', path)
+
 
 @index_bp.route('/chatroom', endpoint='chatroom')
 def chatroom():
