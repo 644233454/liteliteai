@@ -1,10 +1,12 @@
 <template>
-  <div class="content">
+  <div class="content" @click="clickContent">
    <div class='head'>
     <div class="back_view">
-
      <div class="left"></div>
      <van-image class="logo"  :src="MainHead"></van-image>
+
+      
+
     </div>
      <div class="tip">
        -<br />施主，<br />说出你的烦恼
@@ -24,49 +26,48 @@
        <img :src="ReplyIcon" class="reply_icon" />
      </div >
      </van-button>
-     <div class="reply_content" v-if="showReply">
-       <div class="reply_content_title">佛曰</div>
-       <div class="reply_content_info">{{ replyText }}</div>
-       <div class="btn_arr">
-         <van-button class="copy_url" @click="copyURL">
-          渡化众生
-         </van-button>
-         <div class="middle"/>
-         <van-button class="copy_content" @click="copyContent">
-          复制佛言
-         </van-button>
-       </div>
-     </div>
-     <div class="reply_content" v-else>
-<!--       <QuestionList class="question_view"/>-->
+     <div class="reply_content" >
+      <QuestionList class="question_view"/>
      </div>
    </div>
   </div>
 
-
+  <audio
+      ref="audioRef"
+      class="audio"
+      preload="metadata"
+      controls
+      loop
+      :src="Mp3"
+      :hidden="true"
+      @ended="onEnded"
+    />
  </template>
  <script setup lang='ts'>
- import { ref,nextTick,onMounted } from 'vue'
+ import { ref,onMounted,watch,nextTick } from 'vue'
  import MainHead from '@/assets/main_head.png'
  import ReplyIcon from '@/assets/reply_icon.svg'
  import { QuestionList} from '@/components'
- import { useClipboard } from '@vueuse/core'
- import { showToast } from 'vant'
  import { io } from 'socket.io-client';
+ import { useRouter } from 'vue-router'
+ import {useAppStore} from '@/store/index'
+ import Mp3 from '@/assets/guanyinxinzhou.mp3'
 
+
+const userStore = useAppStore()
+const router = useRouter()
+const audioRef = ref<HTMLAudioElement>()
+
+const jsSdk = window.wx
 //  问题
  const content = ref()
 //  定时器
  const timeCount = ref(0)
 //  回答加载loading
  const replyLoading = ref(false)
-//  是否展示回复内容的界面
- const showReply = ref(false)
-
 //  回复的内容
  const replyText = ref('')
-// 粘贴板
- const { copy } = useClipboard()
+
 
  function generateRandomString(): string {
   const length = 10;
@@ -88,10 +89,7 @@
    if (receivedChatId === chat_id) {
      // 处理收到的消息
      replyText.value += content;
-     document.body.scroll({
-       top: document.body.scrollHeight,
-       behavior: "smooth",
-     });
+     userStore.setAIReply(replyText.value)
    }
  });
  socket.on('connect', () => {
@@ -99,73 +97,91 @@
    socket.emit('join', {'chat_id': chat_id});
  });
 
-
-// 界面加载完毕事件
- onMounted(()=>{
-
-
- })
-// 复制当前url
- const copyURL = ()=>{
-    const text =  location.href
-    try {
-      copy(text).then(() => {
-        showToast('复制成功')
-      })
-    } catch (err) {
-      showToast('复制失败')
-      console.error(err)
-    }
-
- }
- // 复制佛陀回答内容
- const copyContent = ()=>{
-  try {
-      copy(replyText.value).then(() => {
-        showToast('复制成功')
-      })
-    } catch (err) {
-      showToast('复制失败')
-      console.error(err)
-    }
-}
 //  点击咨询按钮
  const reply = () => {
    console.log('佛陀回答');
    if (!content.value) {
      content.value = '佛祖，人生的意义是什么？'
    }
-   replyText.value = '';
-
-
+   replyLoading.value = true
+   userStore.setAIReply('')
+   replyText.value = ''
    socket.emit('fotuo_ws', {
      'msg': content.value,
      'chat_id': chat_id
    });
-   showReply.value = true
 
 // 以下是测试数据  接入实际数据时 需要删掉
-//    timeCount.value = 0
-//    replyLoading.value = true
-//     // 模拟网络数据
-//   const time =  setInterval(()=>{
-//     if(timeCount.value >= 10){
-//       clearInterval(time)
-//     }
-//     timeCount.value++,
-//     console.log('我是定时器')
-//     replyText.value = replyText.value + '我是定时器'
-//     document.body.scroll({
-//       top: document.body.scrollHeight,
-//       behavior: 'smooth'
-//     })
-//   },1000)
-//    setTimeout(() => {
-//      replyLoading.value = false
-//      showReply.value = true
-//    }, 1000);
+   timeCount.value = 0
+    // 模拟网络数据
+  const time =  setInterval(()=>{
+    if(timeCount.value >= 10){
+      clearInterval(time)
+    }
+    timeCount.value++,
+    console.log('我是定时器')
 
+    replyText.value = replyText.value + '我是定时器'
+
+    console.log('replyText.value =',replyText.value)
+
+    console.log('userStore =',userStore)
+
+    userStore.setAIReply(replyText.value)
+
+  },1000)
  }
+
+ onMounted(()=>{
+  const content = document.getElementsByClassName('content')[0]
+
+  console.log('onMounted')
+
+//  方案1
+  // content.addEventListener('scroll', listenerScroll)
+  // setTimeout(() => {
+  //   content.scroll({
+  //     top:  1,
+  //     behavior: 'smooth',
+  //     })
+  //  }, 1000);
+
+      // 方案五
+  setTimeout(() => {
+    console.log('setTimeout')
+          const eventType = 'click'; 
+          const event = new Event(eventType, {
+            bubbles: true, // 事件是否冒泡
+            cancelable: true, // 事件是否可取消
+          });
+          content.dispatchEvent(event); 
+  }, 1000);
+ 
+ })
+
+ const clickContent = ()=>{
+  console.log('clickContent')
+  audioRef.value?.play()
+ }
+
+ const listenerScroll = ()=>{
+  console.log('listenerScroll')
+  // audioRef.value?.play()
+ }
+//  监听ai回复
+ watch(()=>replyText.value,data =>{
+  if(data.length > 0){
+    replyLoading.value = false
+    router.push({
+      name: 'reply',
+    })
+  }
+ })
+ function onEnded(e: Event) {
+  console.log('测试')
+  audioRef.value?.load()
+
+}
 
  </script>
  <style lang='scss' scoped>
@@ -173,14 +189,16 @@
    display: flex;
    flex-direction: column;
    height: 100%;
+   overflow: auto;
    .head{
      width: 100%;
      flex-shrink: 0;
-     height: 289px;
+     flex-basis: 289px;
      position: relative;
      .back_view{
       z-index: 0;
       display: flex;
+      height: 300px;
       .left{
        flex-grow:1;
       }
@@ -200,6 +218,7 @@
      z-index: 1;
      display: flex;
      flex: 1;
+     flex-shrink: 0;
      flex-direction: column;
      align-items: center;
      background-color: #F2F3F5;
@@ -207,11 +226,11 @@
      border-top-left-radius: 16px;
      padding: 24px;
      .input{
-       flex-shrink: 0;
+         flex-shrink: 0;
          background: #FFFFFF;
          border: 1px solid rgba(255, 255, 255, 0.3);
          border-radius: 8px;
-         font-size: 18px;
+         font-size: 15px;
        }
        .input-tip{
          flex-shrink: 0;
@@ -240,7 +259,6 @@
        }
        .reply_content{
          flex-grow: 1;
-         margin-top: 44px;
          display: flex;
          flex-direction: column;
          align-items: center;
